@@ -2,10 +2,8 @@
 pragma solidity ^0.8.9;
 
 struct Soul {
-    address owner;
     uint256 reputation;
     uint256 soulPrice;
-    string avatar;
 }
 
 interface IRunnerSoul {
