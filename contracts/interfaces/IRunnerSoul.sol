@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "interfaces/ISoulBound.sol";
+import "../erc/ISoulBound721.sol";
 
 struct Soul {
     uint256 reputation;
@@ -14,4 +14,7 @@ interface IRunnerSoul is ISoulBound721 {
     function burnSoul() external; // burn soul and return collateral in RTW if reputation >= starting reputation
     function getReputation(address runner) external returns (uint256);
     function liquidateSoul(address runner) external; // if reputation = 0
+
+    function increaseReputation(address runner, uint256 amount) external;
+    function decreaseReputation(address runner, uint256 amount) external;
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Mission.sol";
 
 contract MissionFactory is Ownable {
@@ -29,7 +29,7 @@ contract MissionFactory is Ownable {
 
     function createMission(
         string memory _codex,
-        uint256 _rewardAmount,
+        uint256 _totalRewardAmount,
         address _operationToken,
         uint256 _totalOperationAmount,
         uint256 _minTotalCollateralPledge,
@@ -53,9 +53,9 @@ contract MissionFactory is Ownable {
         );
 
         // transfer operation token
-        IERC20(_operationToken).transferFrom(msg.sender, address(mission), _operationAmount);
+        IERC20(_operationToken).transferFrom(msg.sender, address(mission), _totalOperationAmount);
         // transfer mission reward
-        IERC20(rtw).transferFrom(msg.sender, address(mission), _rewardAmount);
+        IERC20(rtw).transferFrom(msg.sender, address(mission), _totalRewardAmount);
 
         totalMissions++;
         missionList.push(address(mission));

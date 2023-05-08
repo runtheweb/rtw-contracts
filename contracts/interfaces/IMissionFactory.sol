@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 interface IMissionFactory {
     function createMission(
         string memory codex,
@@ -19,4 +21,5 @@ interface IMissionFactory {
     function missionIds(address contr) external returns (uint256); // return id by address
     function totalMissions() external returns (uint256);
     function soulContract() external returns (address);
+    function rtw() external returns(IERC20);
 }

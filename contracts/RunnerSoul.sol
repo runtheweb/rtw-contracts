@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "erc/SoulBound721.sol";
+import "./erc/SoulBound721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/IERC20.sol";
-import "interfaces/IRunnerSoul.sol";
-import "interfaces/IMissionFactory.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IRunnerSoul.sol";
+import "./interfaces/IMissionFactory.sol";
 
-contract RunnerSoul is SoulBound, Ownable {
+contract RunnerSoul is SoulBound721, Ownable {
     uint256 public soulPrice; // price of mint a soul
     uint256 public liquidationFee; // treasury fee for liquidation (1e18 = 100%)
     IERC20 public rtw; // RTW token address
@@ -20,7 +20,7 @@ contract RunnerSoul is SoulBound, Ownable {
 
     // ================= CONSTRUCTOR =================
 
-    constructor(uint256 _soulPrice, uint256 _liquidationFee) SoulBound("Runner Soul", "RSOUL") {
+    constructor(uint256 _soulPrice, uint256 _liquidationFee) SoulBound721("Runner Soul", "RSOUL") {
         require(_liquidationFee <= MAX_LIQUIDATION_FEE, "Fee cannot exceed MAX_LIQUIDATION_FEE");
         soulPrice = _soulPrice;
         liquidationFee = _liquidationFee;
@@ -59,6 +59,10 @@ contract RunnerSoul is SoulBound, Ownable {
 
     // ================= USER FUNCTIONS =================
 
+    function tokenURI(uint256 id) public pure override returns (string memory) {
+        return "";
+    }
+
     function mintSoul() external {
         require(_balanceOf[msg.sender] == 0, "Courier soul already minted");
         rtw.transferFrom(msg.sender, address(this), soulPrice);
@@ -74,7 +78,7 @@ contract RunnerSoul is SoulBound, Ownable {
         delete souls[msg.sender];
     }
 
-    function getReputation(address runner) external returns (uint256) {
+    function getReputation(address runner) external view returns (uint256) {
         return souls[runner].reputation;
     }
 

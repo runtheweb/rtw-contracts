@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "interfaces/IMissionFactory.sol";
-import "interfaces/IMission.sol";
-import "interfaces/IRunnerSoul.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IMissionFactory.sol";
+import "./interfaces/IMission.sol";
+import "./interfaces/IRunnerSoul.sol";
 
 contract Mission {
     event RunnerJoined(address indexed mission, address indexed runner);
@@ -20,6 +21,7 @@ contract Mission {
     uint256 public ratingTime; // time arbiters to vote
 
     IMissionFactory public factory; // misstion factory contract
+    IERC20 public rtw;
     IRunnerSoul public soulContract; // courierSoul contract
 
     MissionStatus public status;
@@ -51,7 +53,8 @@ contract Mission {
         ratingTime = _ratingTime;
 
         factory = IMissionFactory(msg.sender);
-        soulContract = ICourierSoul(factory.soulContract());
+        soulContract = IRunnerSoul(factory.soulContract());
+        rtw = factory.rtw();
 
         status = MissionStatus.CREATED;
     }
@@ -87,7 +90,7 @@ contract Mission {
         if (status == MissionStatus.CREATED) {
             rtw.transfer(msg.sender, position.pledgeAmount);
             soulContract.increaseReputation(msg.sender, position.pledgeReputation);
-        } else if (status == MissionStatis.ENDED) {
+        } else if (status == MissionStatus.ENDED) {
             // todo: add logic to withdraw
         }
 
