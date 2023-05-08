@@ -1,12 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
+import "interfaces/ISoulBound.sol";
+
 struct Soul {
     uint256 reputation;
     uint256 soulPrice;
 }
 
-interface IRunnerSoul {
+interface IRunnerSoul is ISoulBound721 {
     function mintSoul() external; // pledge RTW and mint sould bound soul
     function setSoulPrice(uint256 price) external; // soul price in RTW
     function burnSoul() external; // burn soul and return collateral in RTW if reputation >= starting reputation

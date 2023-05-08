@@ -5,12 +5,14 @@ import "erc/SoulBound721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/IERC20.sol";
 import "interfaces/IRunnerSoul.sol";
+import "interfaces/IMissionFactory.sol";
 
 contract RunnerSoul is SoulBound, Ownable {
     uint256 public soulPrice; // price of mint a soul
     uint256 public liquidationFee; // treasury fee for liquidation (1e18 = 100%)
     IERC20 public rtw; // RTW token address
     address public treasury; // DAO treasury
+    IMissionFactory public factory; // mission factory contract
 
     uint256 public constant MAX_LIQUIDATION_FEE = 1e18;
 
@@ -30,9 +32,10 @@ contract RunnerSoul is SoulBound, Ownable {
      * @notice Initialize contract dependencies
      * @dev Reinitialization available only for test purposes
      */
-    function initialize(address _rtw) external onlyOwner {
-        // require(rtx == address(0) && _rtx != address(0), "Already initialized");
-        rtx = _rtx;
+    function initialize(address _rtw, address _treasury, address _factory) external onlyOwner {
+        rtw = IERC20(_rtw);
+        treasury = _treasury;
+        factory = IMissionFactory(_factory);
     }
 
     function setSoulPrice(uint256 _soulPrice) external onlyOwner {
@@ -88,5 +91,24 @@ contract RunnerSoul is SoulBound, Ownable {
         rtw.transfer(msg.sender, soul.soulPrice - fee);
 
         delete souls[runner];
+    }
+
+    // ================= SPECIAL FUNCTIONS =================
+
+    function increaseReputation(address runner, uint256 amount) external {
+        require(factory.missionIds(msg.sender) != 0, "Can be called only by mission contract");
+        require(_balanceOf[runner] > 0, "Runner has no soul");
+
+        souls[runner].reputation += amount;
+    }
+
+    function decreaseReputation(address runner, uint256 amount) external {
+        require(factory.missionIds(msg.sender) != 0, "Can be called only by mission contract");
+        require(_balanceOf[runner] > 0, "Runner has no soul");
+        require(souls[runner].reputation >= amount, "Runner has not enought reputation");
+
+        unchecked {
+            souls[runner].reputation -= amount;
+        }
     }
 }
