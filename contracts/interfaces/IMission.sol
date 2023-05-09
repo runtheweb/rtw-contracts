@@ -17,8 +17,15 @@ struct Position {
 }
 
 enum Role {
+    NONE,
     COURIER,
     ARBITER
+}
+
+struct RequestStatus {
+    bool fulfilled; // whether the request has been successfully fulfilled
+    bool exists; // whether a requestId exists
+    uint256[] randomWords;
 }
 
 interface IMission {
