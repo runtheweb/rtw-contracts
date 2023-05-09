@@ -335,13 +335,15 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
     }
 
     function runnerResult(address runner) public view returns (bool res_) {
+        require(status == MissionStatus.ENDED, "Mission is not ended yet");
+
         Role role_ = positions[runner].role;
         if (role_ == Role.COURIER) {
             res_ = _getCourierResult(runner);
         } else if (role_ == Role.ARBITER) {
             res_ = _getArbiterResult(runner);
         } else {
-            revert("Only the mission runners can withdraw");
+            revert("Is not a runner");
         }
     }
 

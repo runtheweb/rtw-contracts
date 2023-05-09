@@ -49,7 +49,6 @@ contract MissionFactory is Ownable {
         external
         onlyOwner
     {
-        // require(rtx == address(0) && _rtx != address(0), "Already initialized");
         rtw = _rtw;
         soulContract = _soulContract;
         linkToken = _linkToken;

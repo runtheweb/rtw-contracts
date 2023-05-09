@@ -42,4 +42,6 @@ interface IMission {
     function pushProof(string memory proof) external; // couriers provide proofs
     // -- arbiters
     function rateCouriers(bool[] memory rates) external; // rates for each courier
+    // -- view
+    function runnerResult(address runner) external view returns (bool);
 }
