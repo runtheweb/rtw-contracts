@@ -100,14 +100,14 @@ contract RunnerSoul is SoulBound721, Ownable {
     // ================= SPECIAL FUNCTIONS =================
 
     function increaseReputation(address runner, uint256 amount) external {
-        require(factory.missionIds(msg.sender) != 0, "Can be called only by mission contract");
+        require(factory.missionIds(msg.sender) > 0, "Can be called only by mission contract");
         require(_balanceOf[runner] > 0, "Runner has no soul");
 
         souls[runner].reputation += amount;
     }
 
     function decreaseReputation(address runner, uint256 amount) external {
-        require(factory.missionIds(msg.sender) != 0, "Can be called only by mission contract");
+        require(factory.missionIds(msg.sender) > 0, "Can be called only by mission contract");
         require(_balanceOf[runner] > 0, "Runner has no soul");
         require(souls[runner].reputation >= amount, "Runner has not enought reputation");
 
