@@ -24,13 +24,14 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
 
     string public codex; // link or text of the mission codex
     uint256 public totalRewardAmount; // amount of RTW token to reward runners
-    address public operationToken; // address of an operation token
     uint256 public totalOperationAmount; // amount of the operation token to do something
     uint256 public minTotalCollateralPledge; // min total collateral in RTW required
-    uint256 public numberOfCouriers; // required number of couriers to start
-    uint256 public numberOfArbiters; // required number of arbiters to start
-    uint256 public executionTime; // time couriers to run
-    uint256 public ratingTime; // time arbiters to vote
+    address public operationToken; // address of an operation token
+
+    uint32 public numberOfCouriers; // required number of couriers to start
+    uint32 public numberOfArbiters; // required number of arbiters to start
+    uint32 public executionTime; // time couriers to run
+    uint32 public ratingTime; // time arbiters to vote
 
     IMissionFactory public factory; // misstion factory contract
     IRtwToken public rtw;
@@ -58,13 +59,13 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
     constructor(
         string memory _codex,
         uint256 _totalRewardAmount,
-        address _operationToken,
         uint256 _totalOperationAmount,
         uint256 _minTotalCollateralPledge,
-        uint256 _numberOfCouriers,
-        uint256 _numberOfArbiters,
-        uint256 _executionTime,
-        uint256 _ratingTime,
+        address _operationToken,
+        uint32 _numberOfCouriers,
+        uint32 _numberOfArbiters,
+        uint32 _executionTime,
+        uint32 _ratingTime,
         address _creator
     ) {
         codex = _codex;
@@ -207,8 +208,8 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
         require(status == MissionStatus.STARTED, "State missmatch");
         require(startTime + executionTime + ratingTime < block.timestamp, "Mission time is not over yet");
 
-        uint256 totalCourierLoosers_;
-        uint256 totalArbitersLoosers_;
+        uint32 totalCourierLoosers_;
+        uint32 totalArbitersLoosers_;
         for (uint256 i = 0; i < couriers.length; ++i) {
             totalCourierLoosers_ += _getCourierResult(couriers[i]) ? 0 : 1;
         }

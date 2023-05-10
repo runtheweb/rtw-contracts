@@ -17,17 +17,17 @@ contract MissionFactory is Ownable {
     address public treasury; // treasury to collect rewards
 
     address[] public missionList; // list of created missions addresses
-    mapping(address => uint256) public missionIds; // mission ids starts from 1
-    uint256 public totalMissions; // total number of created missions
+    mapping(address => uint64) public missionIds; // mission ids starts from 1
+    uint64 public totalMissions; // total number of created missions
     uint64 public subscriptionId; // vrf subscriptionId
 
-    uint256 public constant MAX_TREASURY_FEE = 1e18; // 100%
-    uint256 public treasuryFee;
+    uint32 public constant MAX_TREASURY_FEE = 1e8; // 100%
+    uint32 public treasuryFee;
 
-    uint256 public constant MAX_EXTRA_REPUTATION = 1e18; // 100%
-    uint256 public extraReputation; // extra reputation reward for success mission
+    uint32 public constant MAX_EXTRA_REPUTATION = 1e8; // 100%
+    uint32 public extraReputation; // extra reputation reward for success mission
 
-    constructor(uint256 _treasuryFee, uint256 _extraReputation) {
+    constructor(uint32 _treasuryFee, uint32 _extraReputation) {
         require(_treasuryFee <= MAX_TREASURY_FEE, "Fee cannot exceed MAX_TREASURY_FEE");
         require(_extraReputation <= MAX_EXTRA_REPUTATION, "Extra reputation cannot exceed MAX_EXTRA_REPUTATION");
         treasuryFee = _treasuryFee;
@@ -66,12 +66,12 @@ contract MissionFactory is Ownable {
         linkToken.transferAndCall(address(vrfCoordinator), _linkAmount, abi.encode(subscriptionId));
     }
 
-    function changeTreasuryFee(uint256 _treasuryFee) external onlyOwner {
+    function changeTreasuryFee(uint32 _treasuryFee) external onlyOwner {
         require(_treasuryFee <= MAX_TREASURY_FEE, "Fee cannot exceed MAX_TREASURY_FEE");
         treasuryFee = _treasuryFee;
     }
 
-    function changeExtraReputation(uint256 _extraReputation) external onlyOwner {
+    function changeExtraReputation(uint32 _extraReputation) external onlyOwner {
         require(_extraReputation <= MAX_EXTRA_REPUTATION, "Extra reputation cannot exceed MAX_EXTRA_REPUTATION");
         extraReputation = _extraReputation;
     }
@@ -81,22 +81,22 @@ contract MissionFactory is Ownable {
     function createMission(
         string memory _codex,
         uint256 _totalRewardAmount,
-        address _operationToken,
         uint256 _totalOperationAmount,
         uint256 _minTotalCollateralPledge,
-        uint256 _numberOfCouriers,
-        uint256 _numberOfArbiters,
-        uint256 _executionTime,
-        uint256 _ratingTime
+        address _operationToken,
+        uint32 _numberOfCouriers,
+        uint32 _numberOfArbiters,
+        uint32 _executionTime,
+        uint32 _ratingTime
     )
         external
     {
         Mission mission = new Mission(
             _codex,
             _totalRewardAmount,
-            _operationToken,
             _totalOperationAmount,
             _minTotalCollateralPledge,
+            _operationToken,
             _numberOfCouriers,
             _numberOfArbiters,
             _executionTime,

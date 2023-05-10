@@ -9,18 +9,19 @@ import "./interfaces/IMissionFactory.sol";
 
 contract RunnerSoul is SoulBound721, Ownable {
     uint256 public soulPrice; // price of mint a soul
-    uint256 public liquidationFee; // treasury fee for liquidation (1e18 = 100%)
     IERC20 public rtw; // RTW token address
     address public treasury; // DAO treasury
+    uint32 public liquidationFee; // treasury fee for liquidation (1e8 = 100%)
+
     IMissionFactory public factory; // mission factory contract
 
-    uint256 public constant MAX_LIQUIDATION_FEE = 1e18;
+    uint32 public constant MAX_LIQUIDATION_FEE = 1e8;
 
     mapping(address => Soul) public souls;
 
     // ================= CONSTRUCTOR =================
 
-    constructor(uint256 _soulPrice, uint256 _liquidationFee) SoulBound721("Runner Soul", "RSOUL") {
+    constructor(uint256 _soulPrice, uint32 _liquidationFee) SoulBound721("Runner Soul", "RSOUL") {
         require(_liquidationFee <= MAX_LIQUIDATION_FEE, "Fee cannot exceed MAX_LIQUIDATION_FEE");
         soulPrice = _soulPrice;
         liquidationFee = _liquidationFee;
@@ -42,7 +43,7 @@ contract RunnerSoul is SoulBound721, Ownable {
         soulPrice = _soulPrice;
     }
 
-    function changeLiquidationFee(uint256 _liquidationFee) external onlyOwner {
+    function changeLiquidationFee(uint32 _liquidationFee) external onlyOwner {
         require(_liquidationFee <= MAX_LIQUIDATION_FEE, "Fee cannot exceed MAX_LIQUIDATION_FEE");
         liquidationFee = _liquidationFee;
     }
@@ -87,7 +88,7 @@ contract RunnerSoul is SoulBound721, Ownable {
         require(soul.reputation == 0, "Cannot liquidate soul with positive reputation");
         require(_balanceOf[runner] > 0, "Sould is not minted");
 
-        uint256 fee = (soul.soulPrice * liquidationFee) / 1e18;
+        uint256 fee = (soul.soulPrice * liquidationFee) / 1e8;
 
         _burn(_getIdByAddress(runner));
 
