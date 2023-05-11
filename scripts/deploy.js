@@ -81,6 +81,7 @@ async function main() {
         soul.address, // IRunnerSoul _soulContract,
         config.LINK, // LinkTokenInterface _linkToken,
         config.VRF, // VRFCoordinatorV2Interface _vrfCoordinator,
+        rewardToken.address,
         treasury.address // address _treasury
     );
 

@@ -4,7 +4,7 @@ const dotenv = require("dotenv");
 dotenv.config({ path: __dirname + "/.env" });
 
 module.exports = {
-    defaultNetwork: "localhost",
+    defaultNetwork: "hardhat",
     solidity: {
         version: "0.8.17",
         settings: {

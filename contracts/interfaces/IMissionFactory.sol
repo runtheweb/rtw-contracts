@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./IRtwToken.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "./IRunnerSoul.sol";
+import "./IRewardToken.sol";
 
 interface IMissionFactory {
     function createMission(
@@ -19,16 +20,18 @@ interface IMissionFactory {
     )
         external;
 
-    function missionList(uint256 ind) external returns (address);
-    function missionIds(address contr) external returns (uint256); // return id by address
-    function totalMissions() external returns (uint256);
-    function soulContract() external returns (IRunnerSoul);
-    function rtw() external returns (IERC20);
-    function vrfCoordinator() external returns (VRFCoordinatorV2Interface);
-    function treasury() external returns (address);
-    function subscriptionId() external returns (uint64);
-    function treasuryFee() external returns (uint256);
-    function extraReputation() external returns (uint256);
+    function createSubscription(uint256 amount) external returns (uint64);
+    function missionList(uint256 ind) external view returns (address);
+    function missionIds(address contr) external view returns (uint256); // return id by address
+    function totalMissions() external view returns (uint256);
+    function soulContract() external view returns (IRunnerSoul);
+    function rtw() external view returns (IRtwToken);
+    function rewardToken() external view returns (IRewardToken);
+    function vrfCoordinator() external view returns (VRFCoordinatorV2Interface);
+    function treasury() external view returns (address);
+    function subscriptionId() external view returns (uint64);
+    function treasuryFee() external view returns (uint256);
+    function extraReputation() external view returns (uint256);
     function mintRtw(address to, uint256 amount) external;
     function burnRtw(address from, uint256 amount) external;
 }

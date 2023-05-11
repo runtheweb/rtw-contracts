@@ -6,7 +6,6 @@ import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "./interfaces/IMissionFactory.sol";
 import "./interfaces/IMission.sol";
 import "./interfaces/IRunnerSoul.sol";
-import "./interfaces/IRtwToken.sol";
 
 contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoordinator())) {
     event RunnerJoined(address indexed runner);
@@ -34,8 +33,6 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
     uint32 public ratingTime; // time arbiters to vote
 
     IMissionFactory public factory; // misstion factory contract
-    IRtwToken public rtw;
-    IRunnerSoul public soulContract; // courierSoul contract
 
     address public creator; // mission creator
 
@@ -93,11 +90,12 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
         require(factory.soulContract().balanceOf(msg.sender) > 0, "Cannot join without runner soul");
         require(status == MissionStatus.CREATED, "Status mismatch");
 
-        rtw.burn(msg.sender, _pledgeAmount);
-        soulContract.decreaseReputation(msg.sender, _pledgeReputation); // decrease reputation until mission finish
+        factory.rtw().burn(msg.sender, _pledgeAmount);
+        factory.soulContract().decreaseReputation(msg.sender, _pledgeReputation); // decrease reputation until mission finish
+
+        runners.push(msg.sender);
 
         positions[msg.sender] = Position(totalRunners(), _pledgeAmount, _pledgeReputation, Role.NONE);
-        runners.push(msg.sender);
 
         emit RunnerJoined(msg.sender);
     }
@@ -114,8 +112,8 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
             "Cannot withdraw until mission end"
         );
 
-        rtw.mint(msg.sender, position.pledgeAmount);
-        soulContract.increaseReputation(msg.sender, position.pledgeReputation);
+        factory.rtw().mint(msg.sender, position.pledgeAmount);
+        factory.soulContract().increaseReputation(msg.sender, position.pledgeReputation);
 
         uint256 ind_ = position.id - 1;
 
@@ -138,11 +136,17 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
         bool res_ = runnerResult(msg.sender);
         require(res_, "Loosers cannot withdraw");
 
-        rtw.transfer(msg.sender, runnerRewardAmount());
+        factory.rtw().transfer(msg.sender, runnerRewardAmount());
 
-        rtw.mint(msg.sender, position_.pledgeAmount);
-        uint256 rewardReputation_ = position_.pledgeReputation * factory.extraReputation() / 1e18;
-        soulContract.increaseReputation(msg.sender, position_.pledgeReputation + rewardReputation_);
+        factory.rtw().mint(msg.sender, position_.pledgeAmount);
+        uint256 rewardReputation_ = position_.pledgeReputation * factory.extraReputation() / 1e8;
+        factory.soulContract().increaseReputation(msg.sender, position_.pledgeReputation + rewardReputation_);
+
+        // mint reward token if not minted
+        uint256 tokenId_ = factory.rewardToken().getIdByMissionAddress(address(this));
+        if (factory.rewardToken().balanceOf(msg.sender, tokenId_) == 0) {
+            factory.rewardToken().mintRewardToken(msg.sender, IMission(address(this)));
+        }
 
         delete positions[msg.sender];
 
@@ -187,6 +191,8 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
             }
         }
 
+        couriersRates = new uint256[](couriers.length);
+
         emit MissionStarted();
     }
 
@@ -221,15 +227,16 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
 
         // transfer unused reward to treasury
         uint256 unusedReward_ = runnerRewardAmount() * (totalCourierLoosers_ + totalArbitersLoosers_);
-        rtw.transfer(factory.treasury(), unusedReward_);
+        factory.rtw().transfer(factory.treasury(), unusedReward_);
 
         // compensate losses by courier liquidation
         uint256 compensation_ = totalCourierLoosers_ * minRunnerCollateral();
-        rtw.mint(creator, compensation_);
+        uint256 fee_ = compensation_ * factory.treasuryFee() / 1e8;
+        factory.rtw().mint(creator, compensation_ - fee_);
 
         // rest from arbiters liquidation goes to treasury
         uint256 rest_ = totalArbitersLoosers_ * minRunnerCollateral();
-        rtw.mint(factory.treasury(), rest_);
+        factory.rtw().mint(factory.treasury(), rest_ + fee_);
 
         emit MissionEnded();
     }
@@ -237,7 +244,7 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
     function _computeCouriers() internal view returns (bool[] memory) {
         bool[] memory results_ = new bool[](couriersRates.length);
         for (uint256 i = 0; i < results_.length; ++i) {
-            results_[i] = couriersRates[i] > totalRates / 2;
+            results_[i] = couriersRates[i] * 10 > totalRates * 10 / 2; // times 10 to avoid rounding
         }
         return results_;
     }
@@ -255,16 +262,17 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
     function _getArbiterResult(address _arbiter) internal view returns (bool) {
         bool[] memory results_ = _computeCouriers();
         bool[] memory rate_ = rates[_arbiter];
+
         // punish if didn't vote
         if (rate_.length == 0) {
             return false;
         }
 
-        uint256 majorityMatch;
+        uint256 majorityMatch_;
         for (uint256 i = 0; i < numberOfCouriers; ++i) {
-            majorityMatch += results_[i] == rate_[i] ? 1 : 0;
+            majorityMatch_ += results_[i] == rate_[i] ? 1 : 0;
         }
-        return majorityMatch * 100 / totalRates > 90;
+        return majorityMatch_ * 100 / totalRates > 90;
     }
 
     // ================= COURIERS FUNCTIONS =================

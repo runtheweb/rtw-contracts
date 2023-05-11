@@ -1,10 +1,11 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
+const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
 async function deployFactory() {
     const owner = await ethers.getSigner();
     const Factory = await ethers.getContractFactory("MissionFactory", owner);
-    const factory = await Factory.deploy(ETH.div(10), ETH.div(10)); // 10% , 10%
+    const factory = await Factory.deploy(1e7, 1e7); // 10% , 10%
     await factory.deployed();
     return factory;
 }
@@ -12,7 +13,7 @@ async function deployFactory() {
 async function deployRunnerSoul() {
     const owner = await ethers.getSigner();
     const Soul = await ethers.getContractFactory("RunnerSoul", owner);
-    const soul = await Soul.deploy(ETH.mul(10), ETH.div(100).mul(95)); // 10 RTW , 95%
+    const soul = await Soul.deploy(ethers.utils.parseEther("10"), 95e6); // 10 RTW , 95%
     await soul.deployed();
     return soul;
 }
@@ -36,156 +37,274 @@ async function deployRewardToken() {
 async function deployPixelWar() {
     const owner = await ethers.getSigner();
     const PixelWar = await ethers.getContractFactory("PixelWar", owner);
-    const pixelWar = await PixelWar.deploy();
+    const pixelWar = await PixelWar.deploy(ethers.utils.parseEther("1")); // 1 RTW
     await pixelWar.deployed();
     return pixelWar;
 }
 
+async function deployTreasury() {
+    const owner = await ethers.getSigner();
+    const Treasury = await ethers.getContractFactory("Treasury", owner);
+    const treasury = await Treasury.deploy();
+    await treasury.deployed();
+    return treasury;
+}
+
+async function deployMockERC20(name, symbol) {
+    const owner = await ethers.getSigner();
+    const Mock = await ethers.getContractFactory("MockERC20", owner);
+    const mock = await Mock.deploy(name, symbol);
+    await mock.deployed();
+    return mock;
+}
+
+async function deployMockVrf() {
+    const owner = await ethers.getSigner();
+    const Mock = await ethers.getContractFactory("VRFCoordinatorV2Mock", owner);
+    const mock = await Mock.deploy(100000, 100000);
+    await mock.deployed();
+    return mock;
+}
+
+async function deployMockLink() {
+    const owner = await ethers.getSigner();
+    const Mock = await ethers.getContractFactory("MockLink", owner);
+    const mock = await Mock.deploy();
+    await mock.deployed();
+    return mock;
+}
+
 describe("Mission", function () {
     let deployer, alice, bob, carol;
-    let factory, mission;
+    let factory;
 
     const ETH = ethers.utils.parseEther("1.0");
-
-    before(async () => {
-        factory = deployFactory();
-    });
 
     beforeEach(async () => {
         [deployer, alice, bob, carol] = await ethers.getSigners();
 
-        await synter.initialize(
-            rUsd.address, // _rUsdAddress,
-            synergy.address, // _synergyAddress,
-            loan.address, // _loanAddress,
-            oracle.address, // _oracle,
-            treasury.address // _treasury
+        factory = await deployFactory();
+        soul = await deployRunnerSoul();
+        rtw = await deployRtwToken();
+        rewardToken = await deployRewardToken();
+        pixelwar = await deployPixelWar();
+        treasury = await deployTreasury();
+
+        usdt = await deployMockERC20("USDT", "USDT");
+
+        link = await deployMockLink();
+        vrf = await deployMockVrf();
+
+        await factory.initialize(
+            rtw.address, // IERC20 _rtw,
+            soul.address, // IRunnerSoul _soulContract,
+            link.address, // LinkTokenInterface _linkToken,
+            vrf.address, // VRFCoordinatorV2Interface _vrfCoordinator,
+            rewardToken.address, // IRewardToken _rewardToken
+            treasury.address // address _treasury
         );
 
-        await synergy.initialize(
-            rUsd.address, // _rUsd,
-            wEth.address, // _wEth, !!! todo
-            raw.address, // _raw,
-            synter.address, // _synter,
-            oracle.address, // _oracle,
-            treasury.address, // _treasury,
-            loan.address, // _loan,
-            insurance.address // _insurance
+        await soul.initialize(
+            rtw.address, //IERC20(_rtw);
+            treasury.address, // _treasury;
+            factory.address // IMissionFactory(_factory);
         );
 
-        await rUsd.initialize(
-            synter.address // _synter
-        );
-        await oracle.initialize(
-            rUsd.address // _rUsd
+        await rtw.initialize(
+            factory.address // _factory;
         );
 
-        await insurance.initialize(
-            rUsd.address, // _rUsd
-            raw.address, // _raw
-            synergy.address, // _synergy
-            oracle.address // _oracle
+        await rewardToken.initialize(
+            factory.address // _factory;
         );
 
-        await loan.initialize(
-            rUsd.address, // ISynt(_rUsd);
-            synter.address, // ISynter(_synter);
-            treasury.address, // ITreasury(_treasury);
-            oracle.address // IOracle(_oracle);
+        await pixelwar.initialize(
+            soul.address // _soulContract;
         );
 
-        await raw.initialize(
-            insurance.address // _insurance
+        await rtw.mintTest(ETH.mul(100));
+        await usdt.mint(deployer.address, ETH.mul(1000));
+        await rtw.approve(factory.address, ETH.mul(100));
+        await usdt.approve(factory.address, ETH.mul(1000));
+        await link.mint(factory.address, ETH.mul(100));
+
+        await factory.createSubscription();
+        await vrf.fundSubscription(factory.subscriptionId(), ETH.mul(100));
+
+        tx = await factory.createMission(
+            "test codex", //string memory _codex,
+            ETH.mul(4), //uint256 _totalRewardAmount,
+            ETH.mul(20), //uint256 _totalOperationAmount,
+            ETH.mul(40), //uint256 _minTotalCollateralPledge,
+            usdt.address, //address _operationToken,
+            2, //uint32 _numberOfCouriers,
+            2, //uint32 _numberOfArbiters,
+            3600, //uint32 _executionTime,
+            3600 //uint32 _ratingTime
         );
+        rx = await tx.wait();
 
-        // set datafeed for RAW with price 10$
-        dataFeed = await deployMockDataFeed("RAW", ethers.utils.parseEther("10"));
-        await oracle.changeFeed(raw.address, dataFeed.address);
+        addr = ethers.utils.defaultAbiCoder.decode(["address"], rx.logs[7].topics[1])[0];
+        mission = await ethers.getContractAt("Mission", addr);
 
-        // set datafeed for wETH with price 1600$
-        dataFeed = await deployMockDataFeed("WETH", ethers.utils.parseEther("1600"));
-        await oracle.changeFeed(wEth.address, dataFeed.address);
+        await rtw.approve(soul.address, ETH.mul(10));
+        // console.log(await soul.getReputation(deployer.address));
+
+        await soul.mintSoul();
+        // console.log(await soul.getReputation(deployer.address));
+
+        await rtw.approve(mission.address, ETH.mul(20));
+
+        await rtw.connect(alice).mintTest(ETH.mul(100));
+        await rtw.connect(bob).mintTest(ETH.mul(100));
+        await rtw.connect(carol).mintTest(ETH.mul(100));
+        await rtw.connect(alice).approve(soul.address, ETH.mul(10));
+        await rtw.connect(bob).approve(soul.address, ETH.mul(10));
+        await rtw.connect(carol).approve(soul.address, ETH.mul(10));
+        await soul.connect(alice).mintSoul();
+        await soul.connect(bob).mintSoul();
+        await soul.connect(carol).mintSoul();
+        await rtw.connect(alice).approve(mission.address, ETH.mul(20));
+        await rtw.connect(bob).approve(mission.address, ETH.mul(20));
+        await rtw.connect(carol).approve(mission.address, ETH.mul(20));
     });
 
     describe("Basic tests", function () {
-        it("Should substract RAW", async function () {
-            await raw.mintTest(ETH.mul(1000));
-            await raw.approve(insurance.address, ETH.mul(1000));
-            await insurance.stakeRaw(2628000, ETH.mul(1000));
+        it("Should join mission", async function () {
+            balanceRtw = await rtw.balanceOf(deployer.address);
 
-            expect(await raw.balanceOf(deployer.address)).to.be.equal(0);
-            expect(await raw.balanceOf(insurance.address)).to.be.equal(ETH.mul(1000));
+            await mission.joinMission(ETH.mul(15), ETH.mul(5));
+
+            expect(await soul.getReputation(deployer.address)).to.be.equal(ETH.mul(5));
+            expect(await rtw.balanceOf(deployer.address)).to.be.equal(balanceRtw.sub(ETH.mul(15)));
+            expect(await mission.totalRunners()).to.be.equal(1);
+            expect((await mission.positions(deployer.address))[0]).to.be.equal(1);
+            expect((await mission.positions(deployer.address))[1]).to.be.equal(ETH.mul(15));
+            expect((await mission.positions(deployer.address))[2]).to.be.equal(ETH.mul(5));
         });
-        it("Should be right insurance", async function () {
-            await raw.mintTest(ETH.mul(1000));
-            await raw.approve(insurance.address, ETH.mul(1000));
-            tx = await insurance.stakeRaw(2628000, ETH.mul(1000));
-            receipt = await tx.wait();
 
-            insId = receipt.logs[2].topics[2];
+        it("Should leave mission", async function () {
+            balanceRtw = await rtw.balanceOf(deployer.address);
+            await rtw.approve(mission.address, ETH.mul(15));
+            await mission.joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.leaveMission();
+            expect(await soul.getReputation(deployer.address)).to.be.equal(ETH.mul(10));
+            expect(await rtw.balanceOf(deployer.address)).to.be.equal(balanceRtw);
+            expect(await mission.totalRunners()).to.be.equal(0);
+            expect((await mission.positions(deployer.address))[0]).to.be.equal(0);
+        });
 
-            expect(await insurance.availableCompensation(insId)).to.be.equal(
-                ETH.mul(2628000).mul(1000).div(63070000)
+        it("Should init and start mission", async function () {
+            await mission.joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(alice).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(bob).joinMission(ETH.mul(15), ETH.mul(5));
+            await expect(mission.initMission()).to.be.revertedWith("Insufficient runners");
+            await mission.connect(carol).joinMission(ETH.mul(15), ETH.mul(5));
+
+            await mission.initMission();
+            await expect(mission.leaveMission()).to.be.revertedWith(
+                "Cannot withdraw until mission end"
+            );
+            await expect(mission.startMission()).to.be.revertedWith(
+                "Initialization is not completed"
+            );
+            await vrf.fulfillRandomWords(mission.lastRequestId(), mission.address);
+            expect((await mission.lastRequest())[0]).to.be.equal(true);
+            expect((await mission.positions(alice.address))[3]).to.be.equal(0);
+
+            await mission.startMission();
+
+            expect((await mission.positions(alice.address))[3]).to.be.equal(1);
+            expect((await mission.positions(bob.address))[3]).to.be.equal(1);
+            expect((await mission.positions(deployer.address))[3]).to.be.equal(2);
+            expect((await mission.positions(carol.address))[3]).to.be.equal(2);
+        });
+        it("Should take operation tokens", async function () {
+            await mission.joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(alice).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(bob).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(carol).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.initMission();
+            await vrf.fulfillRandomWords(mission.lastRequestId(), mission.address);
+            await mission.startMission();
+            // couriers : alice , bob
+            // arbiters : deployer, carol
+            await mission.connect(alice).takeOperationTokens();
+            await mission.connect(bob).takeOperationTokens();
+            expect(await usdt.balanceOf(alice.address)).to.be.equal(ETH.mul(10));
+            expect(await usdt.balanceOf(bob.address)).to.be.equal(ETH.mul(10));
+            await mission.connect(alice).pushProof("proof text");
+            await expect(mission.rateCouriers([true, false])).to.be.revertedWith(
+                "Arbiters time has not come yet"
             );
         });
-        it("Should unstake after lock time", async function () {
-            await raw.mintTest(ETH.mul(1000));
-            await raw.approve(insurance.address, ETH.mul(1000));
-            tx = await insurance.stakeRaw(2628000, ETH.mul(1000));
-            receipt = await tx.wait();
+        it("Should rate couriers good", async function () {
+            await mission.joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(alice).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(bob).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(carol).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.initMission();
+            await vrf.fulfillRandomWords(mission.lastRequestId(), mission.address);
+            await mission.startMission();
+            // couriers : alice , bob
+            // arbiters : deployer, carol
+            await mission.connect(alice).takeOperationTokens();
+            await mission.connect(bob).takeOperationTokens();
+            await mission.connect(alice).pushProof("proof text alice");
+            await time.increase(3600);
+            await expect(mission.connect(bob).pushProof("proof text bob")).to.be.revertedWith(
+                "Courier time is over"
+            );
 
-            insId = receipt.logs[2].topics[2];
-
-            await expect(insurance.unstakeRaw(insId)).to.be.reverted;
-
-            await ethers.provider.send("evm_increaseTime", [63070000 + 1]);
-            await ethers.provider.send("evm_mine");
-
-            await insurance.unstakeRaw(insId);
-            expect(await raw.balanceOf(deployer.address)).to.be.equal(ETH.mul(1000));
+            await mission.rateCouriers([true, true]); // will be punished
+            await mission.connect(carol).rateCouriers([true, false]); // will be rewarded
+            await time.increase(3600);
+            await mission.endMission();
+            expect(await mission.runnerResult(deployer.address)).to.be.equal(false);
+            expect(await mission.runnerResult(alice.address)).to.be.equal(true);
+            expect(await mission.runnerResult(bob.address)).to.be.equal(false);
+            expect(await mission.runnerResult(carol.address)).to.be.equal(true);
         });
-        it("Should delete and add correctly", async function () {
-            await raw.mintTest(ETH.mul(1000));
-            await raw.approve(insurance.address, ETH.mul(1000));
 
-            await insurance.stakeRaw(2628000, ETH.mul(100)); // A
-            await insurance.stakeRaw(2628000, ETH.mul(100)); // B
-            await insurance.stakeRaw(2628000, ETH.mul(100)); // C
-            insIdA = await insurance.userInsurances(deployer.address, 0);
-            insIdB = await insurance.userInsurances(deployer.address, 1);
-            insIdC = await insurance.userInsurances(deployer.address, 2);
-            // correct total
-            expect(await insurance.totalInsurances(deployer.address)).to.be.equal(3);
-            // correct ind
-            expect((await insurance.insurances(insIdB))[5]).to.be.equal(1);
-            // change time
-            await ethers.provider.send("evm_increaseTime", [63070000 + 1]);
-            await ethers.provider.send("evm_mine");
+        it("Should properly withdraw collateral and get reward token", async function () {
+            await mission.joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(alice).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(bob).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.connect(carol).joinMission(ETH.mul(15), ETH.mul(5));
+            await mission.initMission();
+            await vrf.fulfillRandomWords(mission.lastRequestId(), mission.address);
+            await mission.startMission();
+            // couriers : alice , bob
+            // arbiters : deployer, carol
+            await mission.connect(alice).takeOperationTokens();
+            await mission.connect(bob).takeOperationTokens();
+            await mission.connect(alice).pushProof("proof text alice");
+            await time.increase(3600);
+            await mission.rateCouriers([true, true]); // will be punished
+            await mission.connect(carol).rateCouriers([true, false]); // will be rewarded
+            await time.increase(3600);
+            balanceBefore = await rtw.balanceOf(deployer.address);
+            await mission.connect(alice).endMission();
+            expect(await rtw.balanceOf(deployer.address)).to.be.equal(
+                balanceBefore.add(ETH.mul(18)) // receive collateral of looser courier
+            );
 
-            // unstake
-            await insurance.unstakeRaw(insIdB);
-            expect((await insurance.insurances(insIdA))[5]).to.be.equal(0);
-            expect((await insurance.insurances(insIdB))[5]).to.be.equal(0); // deleted
-            expect((await insurance.insurances(insIdC))[5]).to.be.equal(1);
-            expect(await insurance.totalInsurances(deployer.address)).to.be.equal(2);
-            expect(await insurance.userInsurances(deployer.address, 0)).to.be.equal(insIdA);
-            expect(await insurance.userInsurances(deployer.address, 1)).to.be.equal(insIdC);
+            await expect(mission.withdrawCollateral()).to.be.revertedWith(
+                "Loosers cannot withdraw"
+            );
+            await expect(mission.connect(bob).withdrawCollateral()).to.be.revertedWith(
+                "Loosers cannot withdraw"
+            );
 
-            // unstake
-            await insurance.unstakeRaw(insIdA);
-            expect((await insurance.insurances(insIdA))[5]).to.be.equal(0); // deleted
-            expect((await insurance.insurances(insIdB))[5]).to.be.equal(0); // deleted
-            expect((await insurance.insurances(insIdC))[5]).to.be.equal(0);
-            expect(await insurance.totalInsurances(deployer.address)).to.be.equal(1);
-            expect(await insurance.userInsurances(deployer.address, 0)).to.be.equal(insIdC);
+            tokenId = await rewardToken.getIdByMissionAddress(mission.address);
+            await mission.connect(alice).withdrawCollateral();
+            expect(await soul.getReputation(alice.address)).to.be.equal(ETH.mul(105).div(10));
+            expect(await rewardToken.balanceOf(alice.address, tokenId)).to.be.equal(1);
 
-            // unstake
-            await insurance.unstakeRaw(insIdC);
-            expect((await insurance.insurances(insIdA))[5]).to.be.equal(0); // deleted
-            expect((await insurance.insurances(insIdB))[5]).to.be.equal(0); // deleted
-            expect((await insurance.insurances(insIdC))[5]).to.be.equal(0); // deleted
-            expect(await insurance.totalInsurances(deployer.address)).to.be.equal(0);
-            await expect(insurance.userInsurances(deployer.address, 0)).to.be.reverted;
+            await rewardToken.connect(carol).mintRewardToken(carol.address, mission.address);
+            await mission.connect(carol).withdrawCollateral();
+            expect(await soul.getReputation(carol.address)).to.be.equal(ETH.mul(105).div(10));
+            expect(await rewardToken.balanceOf(carol.address, tokenId)).to.be.equal(1);
         });
     });
 });

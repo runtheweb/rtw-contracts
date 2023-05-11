@@ -25,17 +25,21 @@ contract RewardToken is SoulBound1155("Reward Token", "RTOKEN"), Ownable {
         return "";
     }
 
+    function getIdByMissionAddress(address mission) public pure returns (uint256) {
+        return uint256(uint160(address(mission)));
+    }
+
     // ================= USER FUNCTIONS =================
 
-    function mintRewardToken(IMission _mission) external {
+    function mintRewardToken(address _runner, IMission _mission) external {
         require(factory.missionIds(address(_mission)) > 0, "Address is not a mission");
 
-        bool res_ = _mission.runnerResult(msg.sender);
+        bool res_ = _mission.runnerResult(_runner);
         require(res_, "Cannot mint unsuccessfully passed mission reward");
 
-        uint256 rewardId_ = uint256(uint160(address(_mission)));
-        require(balanceOf[msg.sender][rewardId_] == 0, "Mission reward already minted");
+        uint256 rewardId_ = getIdByMissionAddress(address(_mission));
+        require(balanceOf[_runner][rewardId_] == 0, "Mission reward already minted");
 
-        _mint(msg.sender, rewardId_, 1, "");
+        _mint(_runner, rewardId_, 1, "");
     }
 }

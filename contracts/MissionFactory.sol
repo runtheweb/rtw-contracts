@@ -5,15 +5,19 @@ import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/LinkTokenInterface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IRtwToken.sol";
+import "./interfaces/IRewardToken.sol";
 import "./Mission.sol";
 
 contract MissionFactory is Ownable {
     event MissionCreated(address indexed missionAddress, address indexed creatorAddress);
 
-    IERC20 public rtw; // RTW token
+    IRtwToken public rtw; // RTW token
     IRunnerSoul public soulContract;
     LinkTokenInterface public linkToken;
     VRFCoordinatorV2Interface public vrfCoordinator;
+    IRewardToken public rewardToken;
+
     address public treasury; // treasury to collect rewards
 
     address[] public missionList; // list of created missions addresses
@@ -40,10 +44,11 @@ contract MissionFactory is Ownable {
      * @dev Reinitialization available only for test purposes
      */
     function initialize(
-        IERC20 _rtw,
+        IRtwToken _rtw,
         IRunnerSoul _soulContract,
         LinkTokenInterface _linkToken,
         VRFCoordinatorV2Interface _vrfCoordinator,
+        IRewardToken _rewardToken,
         address _treasury
     )
         external
@@ -53,12 +58,12 @@ contract MissionFactory is Ownable {
         soulContract = _soulContract;
         linkToken = _linkToken;
         vrfCoordinator = _vrfCoordinator;
+        rewardToken = _rewardToken;
         treasury = _treasury;
     }
 
-    function createSubscription(uint256 _linkAmount) external onlyOwner {
+    function createSubscription() external onlyOwner {
         uint64 subId_ = vrfCoordinator.createSubscription();
-        linkToken.transferAndCall(address(vrfCoordinator), _linkAmount, abi.encode(subId_));
         subscriptionId = subId_;
     }
 
@@ -91,9 +96,12 @@ contract MissionFactory is Ownable {
     )
         external
     {
+        uint256 fee_ = _totalRewardAmount * treasuryFee / 1e8;
+        rtw.transferFrom(msg.sender, treasury, fee_);
+
         Mission mission = new Mission(
             _codex,
-            _totalRewardAmount,
+            _totalRewardAmount - fee_,
             _totalOperationAmount,
             _minTotalCollateralPledge,
             _operationToken,
@@ -107,7 +115,7 @@ contract MissionFactory is Ownable {
         // transfer operation token
         IERC20(_operationToken).transferFrom(msg.sender, address(mission), _totalOperationAmount);
         // transfer mission reward
-        IERC20(rtw).transferFrom(msg.sender, address(mission), _totalRewardAmount);
+        rtw.transferFrom(msg.sender, address(mission), _totalRewardAmount - fee_);
 
         totalMissions++;
         missionList.push(address(mission));
