@@ -11,8 +11,8 @@ contract PixelWar is Ownable {
 
     IRunnerSoul public soulContract;
 
-    mapping(uint256 => mapping(uint256 => bytes3)) public colors;
-    mapping(uint256 => mapping(uint256 => address)) public owners;
+    mapping(int16 => mapping(int16 => bytes3)) public colors;
+    mapping(int16 => mapping(int16 => address)) public owners;
     mapping(address => uint256) public totalUserPixels;
     Pixel[] public allPixels;
 
@@ -42,7 +42,7 @@ contract PixelWar is Ownable {
 
     // ================= USER FUNCTIONS =================
 
-    function colorPixel(uint256 x, uint256 y, bytes3 color) external {
+    function colorPixel(int16 x, int16 y, bytes3 color) external {
         require(availablePixels(msg.sender) > 0, "Insufficient reputation");
         require(isColorable(x, y), "Cannot color this pixel");
 
@@ -59,13 +59,13 @@ contract PixelWar is Ownable {
         emit PixelColored(msg.sender, Pixel(x, y), color);
     }
 
-    function clearPixel(uint256 x, uint256 y) external {
+    function clearPixel(int16 x, int16 y) external {
         require(isClearable(x, y), "Cannot clear this pixel");
 
         address owner_ = owners[x][y];
         totalUserPixels[owner_]--;
-        owners[x][y] = address(0);
-        colors[x][y] = bytes3(0);
+        delete owners[x][y];
+        delete colors[x][y];
 
         emit PixelCleared(msg.sender, Pixel(x, y));
     }
@@ -80,12 +80,12 @@ contract PixelWar is Ownable {
         return soulContract.getReputation(user);
     }
 
-    function isColorable(uint256 x, uint256 y) public view returns (bool) {
+    function isColorable(int16 x, int16 y) public view returns (bool) {
         address owner_ = owners[x][y];
         return (owner_ == address(0)) || (userReputation(owner_) / pixelCost < totalUserPixels[owner_]);
     }
 
-    function isClearable(uint256 x, uint256 y) public view returns (bool) {
+    function isClearable(int16 x, int16 y) public view returns (bool) {
         address owner_ = owners[x][y];
         return (owner_ == msg.sender) || (userReputation(owner_) / pixelCost < totalUserPixels[owner_]);
     }

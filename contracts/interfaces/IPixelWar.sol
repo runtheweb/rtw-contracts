@@ -2,11 +2,17 @@
 pragma solidity ^0.8.9;
 
 struct Pixel {
-    uint256 x;
-    uint256 y;
+    int256 x;
+    int256 y;
 }
 
 interface IPixelWar {
-    function colorPixel(uint256 x, uint256 y, bytes3 color) external;
-    function clearPixel(uint256 x, uint256 y) external;
+    function colorPixel(int16 x, int16 y, bytes3 color) external;
+    function clearPixel(int16 x, int16 y) external;
+
+    function totalPixels() external view returns (uint256);
+    function userReputation(address user) external view returns (uint256);
+    function isColorable(int16 x, int16 y) external view returns (bool);
+    function isClearable(int16 x, int16 y) external view returns (bool);
+    function availablePixels(address user) external view returns (uint256);
 }

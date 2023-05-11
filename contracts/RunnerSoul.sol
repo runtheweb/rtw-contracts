@@ -116,4 +116,11 @@ contract RunnerSoul is SoulBound721, Ownable {
             souls[runner].reputation -= amount;
         }
     }
+
+    // ================= PUBLIC FUNCTIONS =================
+
+    function getMySoulId() external view returns (uint256) {
+        require(_balanceOf[msg.sender] > 0, "Sould is not minted");
+        return _getIdByAddress(msg.sender);
+    }
 }

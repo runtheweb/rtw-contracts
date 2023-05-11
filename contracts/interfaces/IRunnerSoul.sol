@@ -13,8 +13,8 @@ interface IRunnerSoul is ISoulBound721 {
     function setSoulPrice(uint256 price) external; // soul price in RTW
     function burnSoul() external; // burn soul and return collateral in RTW if reputation >= starting reputation
     function getReputation(address runner) external view returns (uint256);
+    function getMySoulId() external view returns (uint256);
     function liquidateSoul(address runner) external; // if reputation = 0
-
     function increaseReputation(address runner, uint256 amount) external;
     function decreaseReputation(address runner, uint256 amount) external;
 }
