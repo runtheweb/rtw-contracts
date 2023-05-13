@@ -306,6 +306,7 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
         require(startTime + executionTime + ratingTime >= block.timestamp, "Arbiters time is over");
         require(isArbiter(msg.sender), "Not arbiter");
         require(_rates.length == numberOfCouriers, "Too much or too low rates");
+        require(rates[msg.sender].length == 0, "Cannot revote");
 
         for (uint256 i = 0; i < _rates.length; ++i) {
             couriersRates[i] += _rates[i] ? 1 : 0;
@@ -362,7 +363,7 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
     function _requestRandomWords() internal returns (uint256 requestId) {
         // Will revert if subscription is not set and funded.
         requestId = factory.vrfCoordinator().requestRandomWords(
-            0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15, factory.subscriptionId(), 3, 100000, 1
+            0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15, factory.subscriptionId(), 3, 2500000, 1
         );
         lastRequest = RequestStatus({randomWords: new uint256[](0), exists: true, fulfilled: false});
         lastRequestId = requestId;
@@ -375,5 +376,17 @@ contract Mission is VRFConsumerBaseV2(address(IMissionFactory(msg.sender).vrfCoo
         lastRequest.fulfilled = true;
         lastRequest.randomWords = _randomWords;
         emit RequestFulfilled(_requestId, _randomWords);
+    }
+
+    /**
+     * @notice Artificially fulfill ctf request
+     * @dev Public only due to testnet testing in case if chainlink doesn't response
+     */
+    function testFulfillRandomWords(uint256[] memory _randomWords) public {
+        require(msg.sender == creator, "only creator");
+        require(lastRequest.exists, "request not found");
+        lastRequest.fulfilled = true;
+        lastRequest.randomWords = _randomWords;
+        emit RequestFulfilled(lastRequestId, _randomWords);
     }
 }

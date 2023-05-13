@@ -258,6 +258,7 @@ describe("Mission", function () {
 
             await mission.rateCouriers([true, true]); // will be punished
             await mission.connect(carol).rateCouriers([true, false]); // will be rewarded
+            await expect(mission.rateCouriers([true, true])).to.be.revertedWith("Cannot revote");
             await time.increase(3600);
             await mission.endMission();
             expect(await mission.runnerResult(deployer.address)).to.be.equal(false);
