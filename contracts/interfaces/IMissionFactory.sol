@@ -7,6 +7,25 @@ import "./IRunnerSoul.sol";
 import "./IRewardToken.sol";
 
 interface IMissionFactory {
+    // -- state
+    function rtw() external view returns (IRtwToken); // rtw token address
+    function soulContract() external view returns (IRunnerSoul); // contract of couriers souls
+    function linkToken() external view returns (address); // link token address
+    function vrfCoordinator() external view returns (VRFCoordinatorV2Interface); // address of vrf coordinator
+    function rewardToken() external view returns (IRewardToken); // reward token address (soul bound trophy)
+    function treasury() external view returns (address); // treasury address
+    function missionList(uint256 ind) external view returns (address); // list of all missions
+    function missionIds(address contr) external view returns (uint64); // get mission id by mission contract address
+    function totalMissions() external view returns (uint32); // total number of all missions
+    function subscriptionId() external view returns (uint64); // id of vrf subscribtion
+    function treasuryFee() external view returns (uint32); // share of rewards which goes to the treasury
+    function extraReputation() external view returns (uint32); // reputation bonus for mission success
+    // -- owner
+    function createSubscription() external; // create vrf subscription
+    function fundSubscription(uint256 _linkAmount) external; // add link to subscription
+    function changeTreasuryFee(uint32 _treasuryFee) external; // change treasury fee
+    function changeExtraReputation(uint32 _extraReputation) external; // change extra reputation
+    // -- create
     function createMission(
         string memory codex,
         uint256 totalRewardAmount,
@@ -19,19 +38,4 @@ interface IMissionFactory {
         uint256 ratingTime
     )
         external;
-
-    function createSubscription(uint256 amount) external returns (uint64);
-    function missionList(uint256 ind) external view returns (address);
-    function missionIds(address contr) external view returns (uint256); // return id by address
-    function totalMissions() external view returns (uint256);
-    function soulContract() external view returns (IRunnerSoul);
-    function rtw() external view returns (IRtwToken);
-    function rewardToken() external view returns (IRewardToken);
-    function vrfCoordinator() external view returns (VRFCoordinatorV2Interface);
-    function treasury() external view returns (address);
-    function subscriptionId() external view returns (uint64);
-    function treasuryFee() external view returns (uint256);
-    function extraReputation() external view returns (uint256);
-    function mintRtw(address to, uint256 amount) external;
-    function burnRtw(address from, uint256 amount) external;
 }

@@ -60,10 +60,6 @@ contract RunnerSoul is SoulBound721, Ownable {
 
     // ================= USER FUNCTIONS =================
 
-    function tokenURI(uint256 id) public pure override returns (string memory) {
-        return "";
-    }
-
     function mintSoul() external {
         require(_balanceOf[msg.sender] == 0, "Courier soul already minted");
         rtw.transferFrom(msg.sender, address(this), soulPrice);
@@ -77,10 +73,6 @@ contract RunnerSoul is SoulBound721, Ownable {
         _burn(_getIdByAddress(msg.sender));
         rtw.transfer(msg.sender, soul.soulPrice);
         delete souls[msg.sender];
-    }
-
-    function getReputation(address runner) external view returns (uint256) {
-        return souls[runner].reputation;
     }
 
     function liquidateSoul(address runner) external {
@@ -119,8 +111,16 @@ contract RunnerSoul is SoulBound721, Ownable {
 
     // ================= PUBLIC FUNCTIONS =================
 
+    function tokenURI(uint256 id) public pure override returns (string memory) {
+        return "";
+    }
+
     function getMySoulId() external view returns (uint256) {
         require(_balanceOf[msg.sender] > 0, "Sould is not minted");
         return _getIdByAddress(msg.sender);
+    }
+
+    function getReputation(address runner) external view returns (uint256) {
+        return souls[runner].reputation;
     }
 }

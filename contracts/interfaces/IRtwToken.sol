@@ -7,11 +7,11 @@ import "./IMissionFactory.sol";
 /// @title Mock RTX token with public mint
 
 interface IRtwToken is IERC20 {
-    function factory() external returns (IMissionFactory);
-
-    function initialize(IMissionFactory _factory) external;
-    function mintTest(uint256 amount) external;
-
-    function mint(address to, uint256 amount) external;
-    function burn(address from, uint256 amount) external;
+    // -- state
+    function factory() external returns (IMissionFactory); // mission factory address
+    // -- user
+    function mintTest(uint256 amount) external; // mint test rtw tokens
+    // -- special
+    function mint(address to, uint256 amount) external; // only for a mission contract
+    function burn(address from, uint256 amount) external; // only for a mission contract
 }

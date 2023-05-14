@@ -21,7 +21,7 @@ contract RewardToken is SoulBound1155("Reward Token", "RTOKEN"), Ownable {
 
     // ================= PUBLIC FUNCTIONS =================
 
-    function uri(uint256 id) public view override returns (string memory) {
+    function uri(uint256 id) public pure override returns (string memory) {
         return "";
     }
 
