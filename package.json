@@ -1,7 +1,7 @@
 {
   "name": "webrunners",
   "version": "1.0.0",
-  "description": "",
+  "description": "> Web Runners for arbitrary task execution",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -11,11 +11,14 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^2.0.0",
     "dotenv": "^16.0.3",
-    "hardhat": "^2.12.2"
+    "hardhat": "^2.14.0"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.5.1",
-    "@openzeppelin/contracts": "^4.8.0",
+    "@openzeppelin/contracts": "^4.8.3",
     "solmate": "^6.6.1"
+  },
+  "directories": {
+    "test": "test"
   }
 }

@@ -6,13 +6,13 @@
 
 To know more about the project, please check
 
--   Watch 5 minutes video [CLICK](https://www.youtube.com/watch?v=LIEnPfrLhEU)
--   Read long docs [CLICK](https://docs.google.com/document/d/1qZ9yQxBh97hPXoly_CunWtkBBPAq4gBHezsPhduTPys/edit?usp=sharing)
--   Check slides [CLICK](https://docs.google.com/presentation/d/1oaHwyQo8Az6SX8Iqspa7PYCX4iYC4vN5WmgOjsrqFiQ/edit?usp=sharing)
+-   Watch 5 minutes video [CLICK](...)
+-   Check slides [CLICK](https://docs.google.com/presentation/d/1xSQYlth2mh3vHULziAYh4BwOC0XxrypZkPIgLuj3ld8/edit?usp=sharing)
+-   Try the app [CLICK](...)
 
 ## About the project
 
-RunTheWeb is a new concept and protocol that offers delivery services for DAOs and individuals. It was started from scratch during the Web3Souls hackathon.
+RunTheWeb is a new concept and protocol that offers delivery services for DAOs and individuals. It was started from scratch during the Chainlink 2023 hackathon.
 
 Anyone can become a Web Runner to run delivery missions, and earn money. This makes Web Running the first massively web3 job. And unlike play-2-earn projects, it provides real value.
 
