@@ -6,9 +6,9 @@
 
 To know more about the project, please check
 
--   Watch 5 minutes video [CLICK](...)
+-   Watch 5 minutes video [CLICK](https://youtu.be/RIYSHQ4e1fs)
 -   Check slides [CLICK](https://docs.google.com/presentation/d/1xSQYlth2mh3vHULziAYh4BwOC0XxrypZkPIgLuj3ld8/edit?usp=sharing)
--   Try the app [CLICK](...)
+-   Try the app [CLICK](https://runtheweb.github.io/)
 
 ## About the project
 
